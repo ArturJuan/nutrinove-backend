@@ -9,7 +9,7 @@
     "build": "npm install"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.x"
   },
   "dependencies": {
     "@sparticuz/chromium": "^148.0.0",
