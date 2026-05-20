@@ -1,35 +1,29 @@
 import puppeteer from "puppeteer-core";
-import fs from "node:fs";
+import chromium from "@sparticuz/chromium";
 import buildMenuHtml from "./buildMenuHtml.js";
 
-const getChromiumPath = () => {
-  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    return process.env.PUPPETEER_EXECUTABLE_PATH;
+const isProduction = process.env.NODE_ENV === "production";
+
+const getLaunchOptions = async () => {
+  if (isProduction) {
+    return {
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    };
   }
-  const candidates = [
-    "/usr/bin/chromium",
-    "/usr/bin/chromium-browser",
-    "/usr/bin/google-chrome",
-    "/usr/bin/google-chrome-stable",
-  ];
-  for (const path of candidates) {
-    if (fs.existsSync(path)) return path;
-  }
-  return undefined;
+  return {
+    headless: "new",
+    executablePath:
+      process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium-browser",
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  };
 };
 
 const generateMenuPdf = async (menuData) => {
   const html = buildMenuHtml(menuData);
-
-  const browser = await puppeteer.launch({
-    headless: "new",
-    executablePath: getChromiumPath(),
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-    ],
-  });
+  const launchOptions = await getLaunchOptions();
+  const browser = await puppeteer.launch(launchOptions);
 
   try {
     const page = await browser.newPage();

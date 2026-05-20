@@ -12,6 +12,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@sparticuz/chromium": "^148.0.0",
     "cors": "^2.8.6",
     "debug": "~2.6.9",
     "express": "^4.22.1",
