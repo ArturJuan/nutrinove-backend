@@ -1,12 +1,9 @@
-import sqlite3 from "sqlite3";
+import Database from "better-sqlite3";
 
-const db = new sqlite3.Database("./database.sqlite", (error) => {
-  if (error) {
-    console.error(error.message);
-    return;
-  }
+const db = new Database("./database.sqlite");
 
-  console.log("Connected to SQLite database");
-});
+db.pragma("journal_mode = WAL");
+
+console.log("Connected to SQLite database");
 
 export default db;

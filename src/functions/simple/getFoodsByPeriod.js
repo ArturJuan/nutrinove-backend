@@ -1,5 +1,3 @@
-import db from "../../database/connection.js";
-
 /*
 period:
 - breakfast
@@ -8,40 +6,30 @@ period:
 - dinner
 */
 
+import db from "../../database/connection.js";
+
+const validPeriods = {
+  breakfast: "cafe_da_manha",
+  lunch: "almoco",
+  afternoon: "cafe_da_tarde",
+  dinner: "jantar",
+};
+
 const getFoodsByPeriod = (period) => {
-  return new Promise((resolve, reject) => {
-    const validPeriods = {
-      breakfast: "cafe_da_manha",
-      lunch: "almoco",
-      afternoon: "cafe_da_tarde",
-      dinner: "jantar",
-    };
+  const databaseColumn = validPeriods[period];
 
-    const databaseColumn = validPeriods[period];
+  if (!databaseColumn) {
+    throw new Error("Período inválido.");
+  }
 
-    if (!databaseColumn) {
-      reject(new Error("Período inválido."));
-      return;
-    }
+  const query = `
+    SELECT *
+    FROM foods
+    WHERE ${databaseColumn} = 1
+    ORDER BY prioridade_${databaseColumn} DESC
+  `;
 
-    db.all(
-      `
-      SELECT *
-      FROM foods
-      WHERE ${databaseColumn} = 1
-      ORDER BY prioridade_${databaseColumn} DESC
-      `,
-      [],
-      (error, rows) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-
-        resolve(rows);
-      },
-    );
-  });
+  return db.prepare(query).all();
 };
 
 export default getFoodsByPeriod;

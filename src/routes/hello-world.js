@@ -4,19 +4,19 @@ import db from "../database/connection.js";
 const helloWorldRouter = express.Router();
 
 helloWorldRouter.get("/", (req, res) => {
-  db.all("SELECT * FROM foods", [], (error, rows) => {
-    if (error) {
-      return res.status(500).json({
-        success: false,
-        error: error.message,
-      });
-    }
+  try {
+    const foods = db.prepare("SELECT * FROM foods").all();
 
     res.json({
       success: true,
-      foods: rows,
+      foods,
     });
-  });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
 });
 
 export default helloWorldRouter;
