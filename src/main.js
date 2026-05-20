@@ -5,7 +5,7 @@ import runMigrations from "./database/migrations.js";
 import runSeeds from "./database/seeds.js";
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 runMigrations();
 runSeeds();
