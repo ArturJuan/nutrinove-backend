@@ -1,5 +1,6 @@
 const validateMenuData = (data) => {
   const expectedData = {
+    cpf: "string",
     nome: "string",
     peso: "number",
     altura: "number",
@@ -42,6 +43,11 @@ const validateMenuData = (data) => {
   if (data.peso <= 0) throw new Error("Peso inválido.");
   if (data.altura <= 0) throw new Error("Altura inválida.");
   if (data.idade <= 0) throw new Error("Idade inválida.");
+
+  const cpfDigits = data.cpf.replace(/\D/g, "");
+  if (cpfDigits.length !== 11) {
+    throw new Error("CPF inválido. Deve conter 11 dígitos.");
+  }
 };
 
 export default validateMenuData;

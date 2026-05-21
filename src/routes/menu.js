@@ -16,8 +16,12 @@
 
 import express from "express";
 import createMenu from "../functions/complex/createMenu.js";
-import createMeal from "../functions/complex/createMeal.js";
 import generateMenuPdf from "../functions/pdf/generateMenuPdf.js";
+import {
+  saveMenu,
+  getMenuById,
+  getMenusByCpf,
+} from "../functions/complex/menuRepository.js";
 
 const menuRouter = express.Router();
 
@@ -30,78 +34,58 @@ const sanitizeFilename = (name) =>
     .replace(/\s+/g, "-")
     .toLowerCase();
 
+const sendPdfResponse = (res, pdfBuffer, nome) => {
+  const filename = `plano-alimentar-${sanitizeFilename(nome)}.pdf`;
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.end(Buffer.from(pdfBuffer));
+};
+
 menuRouter.post("/", async (req, res) => {
   try {
     const data = req.body;
 
-    const menu = await createMenu(data);
-    const pdfBuffer = await generateMenuPdf(menu);
+    const menuResult = await createMenu(data);
+    const menuId = saveMenu(data, menuResult);
 
-    const filename = `plano-alimentar-${sanitizeFilename(data.nome)}.pdf`;
+    const pdfBuffer = await generateMenuPdf(menuResult);
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-    res.end(Buffer.from(pdfBuffer));
+    res.setHeader("X-Menu-Id", menuId);
+    sendPdfResponse(res, pdfBuffer, data.nome);
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      error: error.message,
-    });
+    res.status(500).json({ error: error.message });
   }
 });
 
-menuRouter.get("/test", async (req, res) => {
+menuRouter.get("/:id/pdf", async (req, res) => {
   try {
-    const testData = {
-      nome: "João Silva",
-      peso: 75,
-      altura: 178,
-      idade: 28,
-      sexo: "masculino",
-      objetivo: "emagrecimento",
-      nivelAtividade: "sedentario",
-      intoleranciaLactose: false,
-      intoleranciaGluten: false,
-    };
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: "ID inválido." });
+    }
 
-    const menu = await createMenu(testData);
-    const pdfBuffer = await generateMenuPdf(menu);
+    const stored = getMenuById(id);
+    if (!stored) {
+      return res.status(404).json({ error: "Dieta não encontrada." });
+    }
 
-    const filename = `plano-alimentar-${sanitizeFilename(testData.nome)}.pdf`;
-
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-    res.end(Buffer.from(pdfBuffer));
+    const pdfBuffer = await generateMenuPdf(stored.menu);
+    sendPdfResponse(res, pdfBuffer, stored.nome);
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      error: error.message,
-    });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// menuRouter.get("/create-meal", async (req, res) => {
-//   try {
-//     const meal = await createMeal(
-//       {
-//         protein: 35,
-//         carbohydrate: 50,
-//         fat: 12,
-//         calories: 448,
-//       },
-//       "dinner",
-//     );
-
-//     res.json(meal);
-//   } catch (error) {
-//     console.error(error);
-
-//     res.status(500).json({
-//       error: error.message,
-//     });
-//   }
-// });
+menuRouter.get("/cpf/:cpf", (req, res) => {
+  try {
+    const menus = getMenusByCpf(req.params.cpf);
+    res.json({ menus });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 export default menuRouter;
